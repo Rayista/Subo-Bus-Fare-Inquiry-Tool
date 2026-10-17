@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e9ebee">
+  <meta name="description" content="查询苏北地区公交的乘车区间票价。">
+  <title>苏北公交票价查询工具</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #e9ebee;
+      --surface: #f4f5f6;
+      --surface-high: #fbfbfc;
+      --surface-low: #e3e5e8;
+      --text: #292d33;
+      --text-soft: #737983;
+      --text-faint: #9ca2aa;
+      --line: rgba(87, 94, 105, .17);
+      --blue: #557b9e;
+      --blue-deep: #3d6388;
+      --blue-light: #dce7f0;
+      --red: #c84242;
+      --red-deep: #a92f35;
+      --green: #477a66;
+      --shadow-out: 7px 7px 18px rgba(135, 141, 151, .20), -7px -7px 18px rgba(255, 255, 255, .78);
+      --shadow-small: 3px 3px 8px rgba(135, 141, 151, .20), -3px -3px 8px rgba(255, 255, 255, .82);
+      --shadow-in: inset 2px 2px 5px rgba(147, 152, 161, .20), inset -2px -2px 5px rgba(255, 255, 255, .86);
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --focus: 0 0 0 3px rgba(85, 123, 158, .22);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--page); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 15% 0%, rgba(255,255,255,.72), transparent 42%),
+        linear-gradient(180deg, #eef0f2 0%, #e7e9ec 58%, #e9ebee 100%);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    button, select, a { font: inherit; }
+    button, a, select { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, select:focus-visible { outline: none; box-shadow: var(--focus); }
+    .app-shell { width: min(100% - 36px, 1040px); margin: 0 auto; padding: 22px 0 38px; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 44px;
+      margin-bottom: 30px;
+    }
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 39px;
+      padding: 0 14px;
+      color: #454a52;
+      text-decoration: none;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 650;
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 11px;
+      background: linear-gradient(180deg, #fbfbfc 0%, #e9ebee 100%);
+      box-shadow: 3px 3px 8px rgba(128,135,145,.18), -3px -3px 8px rgba(255,255,255,.9), inset 0 1px 0 rgba(255,255,255,.95);
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .github-link:hover { color: var(--blue-deep); }
+    .github-link:active { transform: translateY(1px); box-shadow: var(--shadow-in); }
+    .github-link svg { flex: 0 0 auto; }
+    .brand { display: flex; align-items: center; gap: 11px; text-align: right; }
+    .brand-mark {
+      display: grid;
+      width: 37px;
+      height: 37px;
+      place-items: center;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.36);
+      border-radius: 11px;
+      background: linear-gradient(155deg, #d95353, #b83239 75%);
+      box-shadow: 2px 3px 7px rgba(155, 53, 57, .25), inset 0 1px 1px rgba(255,255,255,.34), inset 0 -1px 1px rgba(94,0,0,.12);
+    }
+    .brand-name { margin: 0; font-size: 14px; font-weight: 750; letter-spacing: .04em; }
+    .brand-caption { margin: 3px 0 0; color: var(--text-soft); font-size: 10px; letter-spacing: .15em; }
+
+    .page-intro { margin: 0 auto 25px; text-align: center; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--blue-deep);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before, .eyebrow::after { width: 19px; height: 1px; content: ""; background: #9aafc1; }
+    h1 { margin: 0; font-size: clamp(27px, 4vw, 37px); font-weight: 750; letter-spacing: .045em; line-height: 1.25; }
+    .intro-copy { max-width: 500px; margin: 11px auto 0; color: var(--text-soft); font-size: 13px; line-height: 1.8; }
+
+    .main-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(290px, .85fr); gap: 20px; align-items: stretch; }
+    .panel {
+      min-width: 0;
+      padding: 25px;
+      border: 1px solid rgba(255,255,255,.82);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(145deg, rgba(250,251,252,.96) 0%, rgba(235,237,240,.96) 100%);
+      box-shadow: var(--shadow-out), inset 0 1px 0 rgba(255,255,255,.8);
+    }
+    .panel-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .section-index {
+      display: grid;
+      width: 27px;
+      height: 27px;
+      place-items: center;
+      color: var(--blue-deep);
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid rgba(85,123,158,.18);
+      border-radius: 8px;
+      background: linear-gradient(145deg, #edf3f8, #dce6ef);
+      box-shadow: 2px 2px 5px rgba(126,138,151,.14), -2px -2px 5px rgba(255,255,255,.9);
+    }
+    .panel-heading h2 { margin: 0; font-size: 15px; font-weight: 750; letter-spacing: .025em; }
+    .panel-heading p { margin: 3px 0 0; color: var(--text-soft); font-size: 11px; }
+
+    .field-label { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 9px; color: #555b64; font-size: 12px; font-weight: 700; }
+    .field-label .optional { color: var(--text-faint); font-size: 11px; font-weight: 500; }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      width: 7px;
+      height: 7px;
+      content: "";
+      border-right: 1.5px solid #747b84;
+      border-bottom: 1.5px solid #747b84;
+      transform: translateY(-70%) rotate(45deg);
+      pointer-events: none;
+    }
+    select {
+      display: block;
+      width: 100%;
+      min-height: 49px;
+      padding: 0 42px 0 15px;
+      appearance: none;
+      color: #343941;
+      font-size: 14px;
+      border: 1px solid rgba(255,255,255,.92);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #f8f9fa 0%, #eceef1 100%);
+      box-shadow: var(--shadow-in), inset 0 1px 0 rgba(255,255,255,.95);
+      transition: border-color .15s ease, box-shadow .15s ease;
+      cursor: pointer;
+    }
+    select:focus { outline: none; border-color: rgba(85,123,158,.48); box-shadow: var(--focus), var(--shadow-in); }
+    select:disabled { color: #a4a9b0; cursor: not-allowed; background: linear-gradient(180deg, #f0f1f3, #e6e8eb); }
+    select option { color: var(--text); background: #f7f8f9; }
+    .route-row { display: grid; grid-template-columns: minmax(0, 1fr) 154px; gap: 15px; align-items: end; }
+    .direction-control { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-height: 49px; padding: 4px; border: 1px solid rgba(255,255,255,.9); border-radius: 13px; background: #e5e7ea; box-shadow: var(--shadow-in); }
+    .direction-button {
+      min-width: 0;
+      padding: 0 7px;
+      color: #707681;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      cursor: pointer;
+      transition: color .15s ease, background .15s ease, box-shadow .15s ease, transform .12s ease;
+    }
+    .direction-button[aria-pressed="true"] {
+      color: var(--blue-deep);
+      border-color: rgba(255,255,255,.95);
+      background: linear-gradient(180deg, #fbfcfd 0%, #e9eef3 100%);
+      box-shadow: 2px 2px 5px rgba(124,132,143,.17), -2px -2px 5px rgba(255,255,255,.92), inset 0 1px 0 #fff;
+    }
+    .direction-button:active { transform: scale(.98); }
+    .route-description {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 36px;
+      margin-top: 12px;
+      padding: 8px 11px;
+      color: var(--text-soft);
+      font-size: 11px;
+      line-height: 1.5;
+      border: 1px solid rgba(255,255,255,.84);
+      border-radius: 9px;
+      background: rgba(225,228,232,.42);
+    }
+    .route-description strong { color: #656b74; font-weight: 650; }
+    .station-section { margin-top: 25px; }
+    .station-fields { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr); align-items: end; gap: 10px; }
+    .station-field { min-width: 0; }
+    .station-select-label { display: flex; align-items: center; gap: 7px; }
+    .station-dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 3px rgba(85,123,158,.12); }
+    .station-dot.end { background: var(--red); box-shadow: 0 0 0 3px rgba(200,66,66,.12); }
+    .between-stations { display: flex; align-items: center; justify-content: center; height: 49px; padding-bottom: 1px; color: #9ba1aa; }
+    .station-hint { min-height: 17px; margin: 7px 0 0; color: var(--text-faint); font-size: 10px; line-height: 1.5; }
+
+    .fare-panel { display: flex; flex-direction: column; }
+    .fare-display {
+      position: relative;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 245px;
+      overflow: hidden;
+      padding: 27px 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.94);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255,255,255,.93), transparent 53%),
+        linear-gradient(155deg, #f2f4f6 0%, #e6e8eb 100%);
+      box-shadow: var(--shadow-in), inset 0 1px 0 rgba(255,255,255,.92);
+    }
+    .fare-display::before, .fare-display::after { position: absolute; width: 135px; height: 135px; content: ""; border: 1px solid rgba(85,123,158,.08); border-radius: 50%; pointer-events: none; }
+    .fare-display::before { top: -80px; right: -48px; }
+    .fare-display::after { bottom: -90px; left: -54px; width: 170px; height: 170px; }
+    .fare-icon { display: grid; width: 44px; height: 44px; place-items: center; margin-bottom: 16px; color: var(--blue-deep); border: 1px solid #fff; border-radius: 14px; background: linear-gradient(145deg, #eef4f8, #dbe5ee); box-shadow: var(--shadow-small); }
+    .fare-title { margin: 0; color: var(--text-soft); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+    .fare-amount { margin: 8px 0 0; color: #363c44; font-size: clamp(42px, 5vw, 54px); font-weight: 780; line-height: 1.08; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+    .fare-amount .currency { margin-right: 3px; color: var(--red); font-size: .57em; font-weight: 700; vertical-align: 10%; letter-spacing: 0; }
+    .fare-unit { margin: 6px 0 0; color: #848a93; font-size: 11px; }
+    .fare-message { max-width: 300px; margin: 16px 0 0; color: var(--text-soft); font-size: 11px; line-height: 1.7; }
+    .fare-message.error { color: var(--red-deep); }
+    .fare-message.success { color: var(--green); }
+    .fare-detail { display: none; width: 100%; margin-top: 21px; padding-top: 15px; border-top: 1px solid rgba(104,111,121,.14); text-align: left; }
+    .fare-detail-row { display: flex; justify-content: space-between; gap: 12px; margin: 7px 0; font-size: 11px; line-height: 1.55; }
+    .fare-detail-row span { color: var(--text-soft); }
+    .fare-detail-row strong { color: #4e555e; text-align: right; font-weight: 700; overflow-wrap: anywhere; }
+    .fare-footnote { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px; padding: 12px 13px; color: #717781; font-size: 11px; line-height: 1.65; border: 1px solid rgba(255,255,255,.85); border-radius: 12px; background: linear-gradient(145deg, rgba(248,249,250,.86), rgba(230,232,235,.75)); }
+    .fare-footnote svg { flex: 0 0 auto; margin-top: 1px; color: var(--blue); }
+    .loading-row { display: flex; align-items: center; justify-content: center; gap: 9px; padding: 14px 10px; color: var(--text-soft); font-size: 12px; }
+    .loading-row.success { color: var(--green); }
+    .loading-row.error { color: var(--red-deep); }
+    .spinner { width: 15px; height: 15px; border: 2px solid #cbd3dc; border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .global-status { display: none; margin: 0 0 18px; padding: 12px 15px; color: #805b37; font-size: 12px; line-height: 1.7; border: 1px solid rgba(220,183,135,.45); border-radius: 12px; background: linear-gradient(180deg, #fbf3e6, #f3e8d7); box-shadow: var(--shadow-small); }
+    .global-status.error { display: block; color: #953f42; border-color: rgba(200,66,66,.2); background: linear-gradient(180deg, #fdf1f1, #f3e4e5); }
+    .global-status.visible { display: block; }
+
+    .how-it-works { margin-top: 22px; padding: 17px 20px; border-top: 1px solid rgba(255,255,255,.82); color: #777d86; font-size: 11px; line-height: 1.9; text-align: center; }
+    .how-it-works strong { color: #555c65; font-weight: 700; }
+    .footer { display: flex; align-items: center; justify-content: center; gap: 7px; margin-top: 18px; color: #a1a6ad; font-size: 10px; letter-spacing: .035em; }
+    .footer-mark { width: 5px; height: 5px; border-radius: 50%; background: var(--red); opacity: .8; }
+
+    @media (max-width: 760px) {
+      .app-shell { width: min(100% - 28px, 520px); padding-top: 15px; }
+      .topbar { margin-bottom: 27px; }
+      .main-grid { grid-template-columns: 1fr; gap: 16px; }
+      .panel { padding: 21px; }
+      .fare-display { min-height: 265px; }
+      .fare-amount { font-size: 52px; }
+      .page-intro { margin-bottom: 21px; }
+    }
+    @media (max-width: 430px) {
+      .app-shell { width: calc(100% - 22px); }
+      .topbar { gap: 8px; }
+      .github-link { min-height: 36px; padding: 0 10px; gap: 7px; font-size: 12px; }
+      .github-link svg { width: 15px; height: 15px; }
+      .brand { gap: 7px; }
+      .brand-mark { width: 33px; height: 33px; border-radius: 10px; }
+      .brand-name { font-size: 12px; }
+      .brand-caption { font-size: 9px; }
+      .panel { padding: 18px 15px; border-radius: 18px; }
+      .route-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+      .direction-control { min-height: 42px; }
+      .station-fields { grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); gap: 6px; }
+      select { min-height: 47px; padding-left: 10px; padding-right: 29px; font-size: 12px; }
+      .select-wrap::after { right: 12px; }
+      .station-select-label { gap: 6px; font-size: 11px; }
+      .station-dot { width: 7px; height: 7px; }
+      .fare-display { min-height: 245px; padding: 23px 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="github-link" id="githubLink" href="https://github.com/Rayista/Subo-Bus-Fare-Inquiry-Tool" target="_blank" rel="noopener noreferrer" aria-label="在新窗口开启专案地址">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.68-3.76-1.32-3.76-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.02-.7.08-.69.08-.69 1.12.08 1.71 1.15 1.71 1.15 1 1.71 2.62 1.22 3.26.94.1-.73.39-1.22.71-1.5-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.11-1.45 3.05-1.15 3.05-1.15.61 1.54.23 2.68.11 2.96.72.78 1.15 1.78 1.15 3.01 0 4.27-2.6 5.21-5.08 5.49.4.35.75 1.02.75 2.06v3.07c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg>
+        <span>GitHub</span>
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" aria-hidden="true"><path d="M5 3h8v8M13 3 4 12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <div class="brand" aria-label="公交票价查询">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M5 15.5V7.2C5 5.4 6.4 4 8.2 4h7.6C17.6 4 19 5.4 19 7.2v8.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5 10h14M7 15.5h10M7 18.5v1.2M17 18.5v1.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="15.5" r="1.2" fill="currentColor"/><circle cx="16" cy="15.5" r="1.2" fill="currentColor"/></svg>
+        </div>
+        <div>
+          <p class="brand-name">苏北公交票价查询工具</p>
+          <p class="brand-caption">Subo Bus Fare Inquiry Tool</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-intro" aria-labelledby="pageTitle">
+        <div class="eyebrow">珍爱生命，远离黑车</div>
+        <h1 id="pageTitle">公交票价查询</h1>
+        <p class="intro-copy">选择乘坐线路与上下车站点，区间票价即时呈现</p>
+      </section>
+
+      <div id="globalStatus" class="global-status" role="alert"></div>
+      <div id="loadingRow" class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span>正在读取线路与票价数据…</span></div>
+
+      <section class="main-grid" aria-label="公交票价查询工具">
+        <section class="panel" aria-labelledby="selectHeading">
+          <div class="panel-heading">
+            <span class="section-index" aria-hidden="true">01</span>
+            <div>
+              <h2 id="selectHeading">先选择线路</h2>
+              <p>先选取需要乘坐的线路和方向</p>
+            </div>
+          </div>
+
+          <div class="route-row">
+            <div>
+              <label class="field-label" for="routeSelect">选择线路 <span class="optional"></span></label>
+              <div class="select-wrap">
+                <select id="routeSelect" disabled>
+                  <option value="">正在加载线路…</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <div class="field-label" id="directionLabel">运行方向</div>
+              <div class="direction-control" role="group" aria-labelledby="directionLabel">
+                <button type="button" class="direction-button" id="upButton" aria-pressed="true" disabled>↑ 上行</button>
+                <button type="button" class="direction-button" id="downButton" aria-pressed="false" disabled>↓ 下行</button>
+              </div>
+            </div>
+          </div>
+          <div class="route-description" id="routeDescription">
+            <span>线路信息加载后显示</span>
+            <strong id="stopCount">— 站</strong>
+          </div>
+
+          <div class="station-section">
+            <div class="panel-heading">
+              <span class="section-index" aria-hidden="true">02</span>
+              <div>
+                <h2>再选择上下车站</h2>
+                <p>再选择具体上下车站点</p>
+              </div>
+            </div>
+
+            <div class="station-fields">
+              <div class="station-field">
+                <label class="field-label station-select-label" for="boardingSelect"><span class="station-dot" aria-hidden="true"></span>上车站</label>
+                <div class="select-wrap">
+                  <select id="boardingSelect" disabled>
+                    <option value="">请先选择线路</option>
+                  </select>
+                </div>
+                <p class="station-hint" id="boardingHint">不能选择本方向终点站</p>
+              </div>
+              <div class="between-stations" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="21" height="21" fill="none"><path d="M4 12h15m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="station-field">
+                <label class="field-label station-select-label" for="alightingSelect"><span class="station-dot end" aria-hidden="true"></span>下车站</label>
+                <div class="select-wrap">
+                  <select id="alightingSelect" disabled>
+                    <option value="">请先选择上车站</option>
+                  </select>
+                </div>
+                <p class="station-hint" id="alightingHint">仅显示后续可下车站点</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel fare-panel" aria-labelledby="fareHeading">
+          <div class="panel-heading">
+            <span class="section-index" aria-hidden="true">03</span>
+            <div>
+              <h2 id="fareHeading">本次乘车票价</h2>
+              <p>根据已配置的分段票价规则自动计算</p>
+            </div>
+          </div>
+
+          <div class="fare-display" aria-live="polite" aria-atomic="true">
+            <div class="fare-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="none"><path d="M6.5 4.5 12 11.5 17.5 4.5 M12 11.5V21 M7.5 14.5H16.5 M7.5 17.5H16.5" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>
+            </div>
+            <p class="fare-title">区 间 票 价</p>
+            <p class="fare-amount" id="fareAmount">—</p>
+            <p class="fare-unit" id="fareUnit">人民币 / 单程</p>
+            <p class="fare-message" id="fareMessage">选择上车站和下车站后，票价会在这里自动显示。</p>
+            <div class="fare-detail" id="fareDetail">
+              <div class="fare-detail-row"><span>乘车区间</span><strong id="fareRoute">—</strong></div>
+              <div class="fare-detail-row"><span>匹配票价分段</span><strong id="fareBracket">—</strong></div>
+            </div>
+          </div>
+
+          <div class="fare-footnote">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="1.4"/><path d="M10 9v4m0-6h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span>票价信息仅供参考，以运营企业官方最新公示为准。</span>
+          </div>
+        </section>
+      </section>
+
+      <div class="how-it-works"><strong>使用说明</strong>　选取线路、方向和上下车站点即可查询区间票价。</div>
+    </main>
+
+    <footer class="footer"><span class="footer-mark" aria-hidden="true"></span><span>Subo Bus Fare Inquiry Tool</span><span>·</span><span>苏北公交票价查询工具</span></footer>
+  </div>
+
+  <script>
+    "use strict";
+
+
+    const GITHUB_URL = "https://github.com/Rayista/Subo-Bus-Fare-Inquiry-Tool";
+
+
+    const DATA_BASE = "/data";
+    const ROUTES_URL = `${DATA_BASE}/routes.json`;
+    const STATIONS_URL = `${DATA_BASE}/stations.json`;
+    const FARES_URL = `${DATA_BASE}/fares.json`;
+
+    const state = {
+      routes: [],
+      stations: {},
+      fares: {},
+      routeId: "",
+      direction: "up",
+      boardingId: "",
+      alightingId: ""
+    };
+
+    const el = {
+      githubLink: document.getElementById("githubLink"),
+      globalStatus: document.getElementById("globalStatus"),
+      loadingRow: document.getElementById("loadingRow"),
+      routeSelect: document.getElementById("routeSelect"),
+      routeDescription: document.getElementById("routeDescription"),
+      stopCount: document.getElementById("stopCount"),
+      upButton: document.getElementById("upButton"),
+      downButton: document.getElementById("downButton"),
+      boardingSelect: document.getElementById("boardingSelect"),
+      alightingSelect: document.getElementById("alightingSelect"),
+      boardingHint: document.getElementById("boardingHint"),
+      alightingHint: document.getElementById("alightingHint"),
+      fareAmount: document.getElementById("fareAmount"),
+      fareUnit: document.getElementById("fareUnit"),
+      fareMessage: document.getElementById("fareMessage"),
+      fareDetail: document.getElementById("fareDetail"),
+      fareRoute: document.getElementById("fareRoute"),
+      fareBracket: document.getElementById("fareBracket")
+    };
+
+    el.githubLink.href = GITHUB_URL;
+
+    function fetchJson(url) {
+      return fetch(url, { cache: "no-store" }).then((response) => {
+        if (!response.ok) {
+          throw new Error(`读取 ${url} 失败（HTTP ${response.status}）`);
+        }
+        return response.json();
+      });
+    }
+
+    function setGlobalStatus(message, isError = false) {
+      el.globalStatus.textContent = message;
+      el.globalStatus.className = message ? `global-status visible${isError ? " error" : ""}` : "global-status";
+    }
+
+    function getCurrentStops() {
+      const routeStations = state.stations[state.routeId];
+      if (!routeStations || !Array.isArray(routeStations[state.direction])) return [];
+      return routeStations[state.direction];
+    }
+
+    function stationIndex(stops, stationId) {
+      return stops.findIndex((stop) => String(stop.stationId) === String(stationId));
+    }
+
+    function stationName(stops, stationId) {
+      const station = stops.find((stop) => String(stop.stationId) === String(stationId));
+      return station ? station.stationName : String(stationId);
+    }
+
+    function makeOption(value, label) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      return option;
+    }
+
+    function fillSelect(select, placeholder, options, disabled = false) {
+      select.replaceChildren(makeOption("", placeholder));
+      for (const item of options) {
+        select.appendChild(makeOption(String(item.stationId), String(item.stationName)));
+      }
+      select.disabled = disabled;
+      select.value = "";
+    }
+
+    function renderRouteOptions() {
+      el.routeSelect.replaceChildren(makeOption("", "请选择公交线路"));
+      for (const route of state.routes) {
+        if (!route || route.routeId == null || !route.routeName) continue;
+        const routeLabel = route.description
+          ? `${route.routeName}（${route.description}）`
+          : String(route.routeName);
+        el.routeSelect.appendChild(makeOption(String(route.routeId), routeLabel));
+      }
+      el.routeSelect.disabled = state.routes.length === 0;
+      if (state.routes.length > 0) {
+        const firstValid = state.routes.find((route) => route && route.routeId != null && route.routeName);
+        if (firstValid) {
+          state.routeId = String(firstValid.routeId);
+          el.routeSelect.value = state.routeId;
+          renderRouteInfo();
+          renderStationOptions();
+        }
+      }
+    }
+
+    function renderRouteInfo() {
+      const route = state.routes.find((item) => item && String(item.routeId) === state.routeId);
+      const stops = getCurrentStops();
+
+      if (!route) {
+        el.routeDescription.firstElementChild.textContent = "请选择线路以查看线路信息";
+        el.stopCount.textContent = "— 站";
+        return;
+      }
+
+      if (stops.length >= 2) {
+        el.routeDescription.firstElementChild.textContent = `${stops[0].stationName} → ${stops[stops.length - 1].stationName}`;
+      } else {
+        el.routeDescription.firstElementChild.textContent = "当前方向暂无有效站点信息";
+      }
+      el.stopCount.textContent = `${stops.length} 站`;
+    }
+
+    function renderStationOptions() {
+      const stops = getCurrentStops();
+      const hasUsableStops = stops.length >= 2 && stops.every((stop) => stop && stop.stationId != null && stop.stationName != null);
+
+      el.upButton.disabled = !state.routeId;
+      el.downButton.disabled = !state.routeId;
+      el.upButton.setAttribute("aria-pressed", String(state.direction === "up"));
+      el.downButton.setAttribute("aria-pressed", String(state.direction === "down"));
+      renderRouteInfo();
+
+      if (!hasUsableStops) {
+        fillSelect(el.boardingSelect, state.routeId ? "该方向暂无有效站点" : "请先选择线路", [], true);
+        fillSelect(el.alightingSelect, "请先选择上车站", [], true);
+        el.boardingHint.textContent = "该线路当前方向至少需要两个有效站点";
+        el.alightingHint.textContent = "暂无可用站点";
+        updateFareDisplay();
+        return;
+      }
+
+      // 上车站不可选本方向终点，因此去掉 stops 的最后一站。
+      fillSelect(el.boardingSelect, "请选择上车站", stops.slice(0, -1), false);
+      fillSelect(el.alightingSelect, "请先选择上车站", [], true);
+      el.boardingHint.textContent = `可选 ${stops.length - 1} 个站点；终点站不可上车`;
+      el.alightingHint.textContent = "选择上车站后显示后续站点";
+      updateFareDisplay();
+    }
+
+    function renderAlightingOptions() {
+      const stops = getCurrentStops();
+      const boardingIndex = stationIndex(stops, state.boardingId);
+
+      if (boardingIndex < 0 || boardingIndex >= stops.length - 1) {
+        state.boardingId = "";
+        state.alightingId = "";
+        fillSelect(el.alightingSelect, "请先选择上车站", [], true);
+        el.alightingHint.textContent = "选择上车站后显示后续站点";
+        updateFareDisplay();
+        return;
+      }
+
+      // 仅展示上车站之后的站点，包含本方向终点，不包含上车站和此前站点。
+      const downstreamStops = stops.slice(boardingIndex + 1);
+      fillSelect(el.alightingSelect, "请选择下车站", downstreamStops, false);
+      el.alightingHint.textContent = `可选 ${downstreamStops.length} 个后续站点`;
+      updateFareDisplay();
+    }
+
+    function formatFare(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "—";
+      return Number.isInteger(number) ? String(number) : String(Number(number.toFixed(2)));
+    }
+
+    /**
+     * 匹配稀疏分段票价：
+     * 1. 优先使用 fares[routeId][boardingStationId] 的当前方向规则；
+     * 2. 选择上车站之后、所选下车站（含）之前，站序最靠后的有效分段站；
+     * 3. 若没有当前方向规则，尝试按 stations.json 的 up 基准站序做双向区间匹配；
+     * 4. 按站序而非 stationId 字符串/数字大小比较，支持下行站序反转。
+     */
+    function calculateFare(routeId, direction, boardingId, alightingId) {
+      const stops = state.stations[routeId] && state.stations[routeId][direction];
+      if (!Array.isArray(stops)) return { ok: false, message: "找不到该线路当前方向的站点数据。" };
+
+      const boardingIndex = stationIndex(stops, boardingId);
+      const alightingIndex = stationIndex(stops, alightingId);
+      if (boardingIndex < 0 || alightingIndex < 0 || alightingIndex <= boardingIndex) {
+        return { ok: false, message: "上下车站点顺序无效，请重新选择站点。" };
+      }
+      if (boardingIndex >= stops.length - 1) {
+        return { ok: false, message: "终点站不能作为上车站。" };
+      }
+
+      const routeRules = state.fares[routeId];
+      if (!routeRules || typeof routeRules !== "object") {
+        return { ok: false, message: "票价数据中没有该线路，请检查 fares.json。" };
+      }
+      const boardingRules = routeRules[boardingId];
+      const validRuleObject = boardingRules && typeof boardingRules === "object" && !Array.isArray(boardingRules);
+
+      // 第一优先级：按当前实际行驶方向，匹配上车站规则中的有效分段点。
+      const eligibleRules = validRuleObject ? Object.entries(boardingRules)
+        .map(([thresholdStationId, rawFare]) => ({
+          stationId: String(thresholdStationId),
+          fare: Number(rawFare),
+          index: stationIndex(stops, thresholdStationId),
+          rawFare
+        }))
+        .filter((rule) => rule.rawFare !== null && rule.rawFare !== ""
+          && Number.isFinite(rule.fare)
+          && rule.index > boardingIndex
+          && rule.index <= alightingIndex)
+        .sort((a, b) => b.index - a.index) : [];
+
+      if (eligibleRules.length > 0) {
+        const matchedRule = eligibleRules[0];
+        return {
+          ok: true,
+          fare: matchedRule.fare,
+          bracketStationId: matchedRule.stationId,
+          bracketStationName: stationName(stops, matchedRule.stationId)
+        };
+      }
+
+      // 第二优先级：兼容 fares.json 只按 up 基准站序维护规则的情形。
+      // 对同一组 stationId，正反向区间使用相同票价；以 up 中靠前的站作为规则起点，
+      // 再从它的稀疏分段点中找出不超过较靠后站点的最近一档。
+      const canonicalStops = state.stations[routeId] && state.stations[routeId].up;
+      if (Array.isArray(canonicalStops)) {
+        const canonicalBoardIndex = stationIndex(canonicalStops, boardingId);
+        const canonicalAlightIndex = stationIndex(canonicalStops, alightingId);
+        if (canonicalBoardIndex >= 0 && canonicalAlightIndex >= 0 && canonicalBoardIndex !== canonicalAlightIndex) {
+          const canonicalOriginIndex = Math.min(canonicalBoardIndex, canonicalAlightIndex);
+          const canonicalDestinationIndex = Math.max(canonicalBoardIndex, canonicalAlightIndex);
+          const canonicalOriginId = String(canonicalStops[canonicalOriginIndex].stationId);
+          const canonicalRules = routeRules[canonicalOriginId];
+          if (canonicalRules && typeof canonicalRules === "object" && !Array.isArray(canonicalRules)) {
+            const canonicalCandidates = Object.entries(canonicalRules)
+              .map(([thresholdStationId, rawFare]) => ({
+                stationId: String(thresholdStationId),
+                fare: Number(rawFare),
+                index: stationIndex(canonicalStops, thresholdStationId),
+                rawFare
+              }))
+              .filter((rule) => rule.rawFare !== null && rule.rawFare !== ""
+                && Number.isFinite(rule.fare)
+                && rule.index > canonicalOriginIndex
+                && rule.index <= canonicalDestinationIndex)
+              .sort((a, b) => b.index - a.index);
+
+            if (canonicalCandidates.length > 0) {
+              const matchedRule = canonicalCandidates[0];
+              return {
+                ok: true,
+                fare: matchedRule.fare,
+                bracketStationId: matchedRule.stationId,
+                bracketStationName: stationName(stops, matchedRule.stationId)
+              };
+            }
+          }
+        }
+      }
+
+      if (!validRuleObject) {
+        return {
+          ok: false,
+          message: `未配置上车站「${stationName(stops, boardingId)}」的直接票价规则，且无法通过基准站序匹配此区间。`
+        };
+      }
+      return {
+        ok: false,
+        message: "没有找到适用于该区间的票价分段。请检查 fares.json 是否包含该区间对应的有效分段规则。"
+      };
+    }
+
+    function resetFareDisplay() {
+      el.fareAmount.textContent = "—";
+      el.fareUnit.textContent = "人民币 / 单程";
+      el.fareMessage.className = "fare-message";
+      el.fareMessage.textContent = "选择上车站和下车站后，票价会在这里自动显示。";
+      el.fareDetail.style.display = "none";
+      el.fareRoute.textContent = "—";
+      el.fareBracket.textContent = "—";
+    }
+
+    function updateFareDisplay() {
+      resetFareDisplay();
+      if (!state.routeId || !state.boardingId || !state.alightingId) return;
+
+      const stops = getCurrentStops();
+      const result = calculateFare(state.routeId, state.direction, state.boardingId, state.alightingId);
+      if (!result.ok) {
+        el.fareMessage.className = "fare-message error";
+        el.fareMessage.textContent = result.message;
+        return;
+      }
+
+      const fareText = formatFare(result.fare);
+      const boardingName = stationName(stops, state.boardingId);
+      const alightingName = stationName(stops, state.alightingId);
+      const route = state.routes.find((item) => String(item.routeId) === state.routeId);
+
+      el.fareAmount.replaceChildren();
+      const currency = document.createElement("span");
+      currency.className = "currency";
+      currency.textContent = "¥";
+      el.fareAmount.append(currency, document.createTextNode(fareText));
+      el.fareUnit.textContent = "人民币 / 单程";
+      el.fareMessage.className = "fare-message success";
+      el.fareMessage.textContent = `${route ? route.routeName : state.routeId} · ${state.direction === "up" ? "上行" : "下行"} · 票价已自动匹配`;
+      el.fareRoute.textContent = `${boardingName} → ${alightingName}`;
+      el.fareBracket.textContent = `${result.bracketStationName}（${result.bracketStationId}）`;
+      el.fareDetail.style.display = "block";
+    }
+
+    function onRouteChange() {
+      state.routeId = el.routeSelect.value;
+      state.direction = "up";
+      state.boardingId = "";
+      state.alightingId = "";
+      renderStationOptions();
+    }
+
+    function onDirectionChange(direction) {
+      if (!state.routeId || state.direction === direction) return;
+      state.direction = direction;
+      state.boardingId = "";
+      state.alightingId = "";
+      renderStationOptions();
+    }
+
+    el.routeSelect.addEventListener("change", onRouteChange);
+    el.upButton.addEventListener("click", () => onDirectionChange("up"));
+    el.downButton.addEventListener("click", () => onDirectionChange("down"));
+    el.boardingSelect.addEventListener("change", () => {
+      state.boardingId = el.boardingSelect.value;
+      state.alightingId = "";
+      renderAlightingOptions();
+    });
+    el.alightingSelect.addEventListener("change", () => {
+      state.alightingId = el.alightingSelect.value;
+      updateFareDisplay();
+    });
+
+    async function init() {
+      try {
+        const [routes, stations, fares] = await Promise.all([
+          fetchJson(ROUTES_URL),
+          fetchJson(STATIONS_URL),
+          fetchJson(FARES_URL)
+        ]);
+
+        if (!Array.isArray(routes)) throw new Error("routes.json 格式错误：文件顶层应为数组。");
+        if (!stations || typeof stations !== "object" || Array.isArray(stations)) throw new Error("stations.json 格式错误：文件顶层应为对象。");
+        if (!fares || typeof fares !== "object" || Array.isArray(fares)) throw new Error("fares.json 格式错误：文件顶层应为对象。");
+
+        state.routes = routes;
+        state.stations = stations;
+        state.fares = fares;
+        el.loadingRow.hidden = false;
+        el.loadingRow.className = "loading-row success";
+        el.loadingRow.textContent = "✓ 线路与票价数据读取成功";
+        setGlobalStatus("");
+        renderRouteOptions();
+
+        if (!state.routeId) {
+          setGlobalStatus("routes.json 中没有可用线路。请确认每条线路都包含 routeId 和 routeName。", true);
+        } else if (!getCurrentStops().length) {
+          setGlobalStatus("线路列表已读取，但当前线路缺少有效站点。请检查 stations.json 中对应线路的 up / down 数组。", true);
+        }
+      } catch (error) {
+        el.loadingRow.hidden = false;
+        el.loadingRow.className = "loading-row error";
+        el.loadingRow.textContent = "✕ 线路与票价数据读取失败";
+        setGlobalStatus(`数据加载失败：${error.message}。请检查 /data/routes.json、/data/stations.json、/data/fares.json 是否存在且有效。`, true);
+        el.routeSelect.replaceChildren(makeOption("", "线路数据加载失败"));
+        el.routeSelect.disabled = true;
+        el.upButton.disabled = true;
+        el.downButton.disabled = true;
+        fillSelect(el.boardingSelect, "站点数据不可用", [], true);
+        fillSelect(el.alightingSelect, "站点数据不可用", [], true);
+        el.fareMessage.textContent = "暂时无法查询票价，请先修复数据加载问题。";
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
