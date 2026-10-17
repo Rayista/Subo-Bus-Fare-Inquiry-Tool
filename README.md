@@ -52,7 +52,6 @@
 * 如有 Bug 或改进建议，欢迎提交 [Issues](../../issues) 或 [Pull Requests](../../pulls)。
 * 如有异议，欢迎前往 **干将西路456号** 进行线下面谈。
 
-[回到顶部 ↑](#subo-bus-fare-inquiry-tool-苏北公交票价查询工具)
 
 ---
 
