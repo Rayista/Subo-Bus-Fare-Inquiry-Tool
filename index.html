@@ -433,11 +433,9 @@
   <script>
     "use strict";
 
-
     const GITHUB_URL = "https://github.com/Rayista/Subo-Bus-Fare-Inquiry-Tool";
+    const DATA_BASE = new URL("./data", document.baseURI).href;
 
-
-    const DATA_BASE = "/data";
     const ROUTES_URL = `${DATA_BASE}/routes.json`;
     const STATIONS_URL = `${DATA_BASE}/stations.json`;
     const FARES_URL = `${DATA_BASE}/fares.json`;
