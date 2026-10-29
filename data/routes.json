@@ -8,5 +8,30 @@
     "routeId": "D212",
     "routeName": "丹阳212路",
     "description": "客运中心 ⇋ 皇塘客运站"
-  } 
+  }, 
+  {
+    "routeId": "D212B",
+    "routeName": "丹阳212路支线",
+    "description": "客运中心 ⇋ 皇塘客运站"
+  },
+  {
+    "routeId": "D213",
+    "routeName": "丹阳213路",
+    "description": "客运中心 ⇋ 里庄客运站"
+  },
+  {
+    "routeId": "D216",
+    "routeName": "丹阳216路",
+    "description": "客运中心 ⇋ 延陵客运站"
+  },
+  {
+    "routeId": "D216B",
+    "routeName": "丹阳216路支线",
+    "description": "客运中心 ⇋ 延陵客运站"
+  },
+  {
+    "routeId": "D218",
+    "routeName": "丹阳218路",
+    "description": "客运中心 ⇋ 珥陵客运站"
+  }
 ]
